@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>NUSAWEAR LifeWear — Toko Online Fashion & Rekomendasi Produk (PBL Bootstrap 5)</title>
+
+  <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap 5.3 CSS & Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <!-- Chart.js untuk Laporan Penjualan -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <link href="css/style.css" rel="stylesheet">
+</head>
+<body>
+
+  <!-- ===================================================================== -->
+  <!-- TOP UTILITY BAR: ROLE SWITCHER (USER STOREFRONT VS ADMIN DASHBOARD)   -->
+  <!-- ===================================================================== -->
+  <div class="mode-bar py-1 px-2 px-md-4 sticky-top no-print">
+    <div class="container-fluid d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2 text-truncate">
+        <span class="badge bg-ch-orange fw-bold" style="font-size: 0.65rem;">PBL WEB DESIGN</span>
+        <span class="d-none d-sm-inline opacity-75">Workshop Desain Web — Bootstrap 5</span>
+      </div>
+      <div class="d-flex align-items-center gap-1 flex-shrink-0">
+        <button type="button" id="btnSwitchUser" class="btn btn-light btn-sm py-0 px-2 fw-bold" style="font-size: 0.72rem;" onclick="switchRole('user')">
+          TOKO USER
+        </button>
+        <button type="button" id="btnSwitchAdmin" class="btn btn-outline-light btn-sm py-0 px-2 fw-bold" style="font-size: 0.72rem;" onclick="switchRole('admin')">
+          ADMIN PANEL
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 text-white" style="font-size: 0.72rem;" onclick="resetDemoState()" title="Reset Data Demo">
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-container position-fixed top-0 end-0 p-3 no-print" style="z-index: 1090; margin-top: 40px;">
+    <div id="uqToast" class="toast align-items-center bg-ch-charcoal text-white border-0 shadow" role="alert">
+      <div class="d-flex">
+        <div class="toast-body small fw-medium" id="uqToastBody">Berhasil diperbarui.</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- 1. SISI PENGGUNA (STOREFRONT)                                         -->
+  <!-- ===================================================================== -->
+  <div id="userStorefrontView">
+
+    <!-- Sticky Header dengan Kotak Logo Kosong -->
+    <header class="uq-header sticky-top no-print" style="top: 29px;">
+      <div class="container py-2">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          
+          <!-- Empty Logo Box + Desktop Nav -->
+          <div class="d-flex align-items-center gap-3">
+            <a class="d-flex align-items-center text-decoration-none" style="cursor: pointer;" onclick="navigateUser('home'); selectCategory('Semua')" aria-label="Beranda">
+              <img src="assets/logo-bajuku.png" class="logo-empty-box" alt="Logo BajuKu">
+            </a>
+
+            <!-- Desktop Category Links -->
+            <nav class="d-none d-lg-flex align-items-center ms-2">
+              <a class="uq-nav-link active" data-cat-nav="Semua" onclick="navigateUser('home'); selectCategory('Semua')">Semua</a>
+              <a class="uq-nav-link" data-cat-nav="Wanita" onclick="navigateUser('home'); selectCategory('Wanita')">Wanita</a>
+              <a class="uq-nav-link" data-cat-nav="Pria" onclick="navigateUser('home'); selectCategory('Pria')">Pria</a>
+              <a class="uq-nav-link" data-cat-nav="Anak" onclick="navigateUser('home'); selectCategory('Anak')">Anak</a>
+            </nav>
+          </div>
+
+          <!-- Search Bar (Desktop) & Action Icons -->
+          <div class="d-flex align-items-center gap-2">
+            <div class="d-none d-md-block" style="width: 240px;">
+              <div class="input-group input-group-sm">
+                <input type="text" id="desktopSearchInput" class="form-control border-ch" placeholder="Cari pakaian..." oninput="handleSearchInput(this.value)">
+                <span class="input-group-text bg-white border-ch"><i class="bi bi-search"></i></span>
+              </div>
+            </div>
+
+            <!-- Mobile Search Button -->
+            <button class="btn btn-link text-ch-charcoal p-2 d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#mobileSearchCollapse" aria-label="Cari">
+              <i class="bi bi-search fs-5"></i>
+            </button>
+
+            <!-- Profile Icon -->
+            <button class="btn btn-link text-ch-charcoal p-2 position-relative" onclick="navigateUser('profile')" aria-label="Profil">
+              <i class="bi bi-person fs-5"></i>
+            </button>
+
+            <!-- Cart Icon + Burnt Orange Badge -->
+            <button class="btn btn-link text-ch-charcoal p-2 position-relative" onclick="navigateUser('cart')" aria-label="Keranjang">
+              <i class="bi bi-bag fs-5"></i>
+              <span id="headerCartBadge" class="position-absolute top-0 start-100 translate-middle badge bg-ch-orange" style="font-size: 0.65rem;">0</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mobile Collapsible Search Bar -->
+        <div class="collapse mt-2 d-md-none" id="mobileSearchCollapse">
+          <div class="input-group input-group-sm">
+            <input type="text" id="mobileSearchInput" class="form-control" placeholder="Cari nama pakaian atau kode..." oninput="handleSearchInput(this.value)">
+            <button class="btn btn-uq-black" type="button" onclick="handleSearchInput('')"><i class="bi bi-x-lg"></i></button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- =================================================================== -->
+    <!-- HALAMAN 1.1: BERANDA (EDITORIAL CAROUSEL, KATALOG & REKOMENDASI)    -->
+    <!-- =================================================================== -->
+    <main id="page-user-home" class="view-section active">
+      
+      <!-- Editorial Hero Carousel -->
+      <section class="container-fluid px-0 px-md-3 pt-0 pt-md-3 mb-4">
+        <div id="lifewearCarousel" class="carousel slide hero-editorial" data-bs-ride="carousel">
+          <div class="carousel-indicators">
+            <button type="button" data-bs-target="#lifewearCarousel" data-bs-slide-to="0" class="active"></button>
+            <button type="button" data-bs-target="#lifewearCarousel" data-bs-slide-to="1"></button>
+            <button type="button" data-bs-target="#lifewearCarousel" data-bs-slide-to="2"></button>
+          </div>
+
+          <div class="carousel-inner">
+            <!-- Banner 1 -->
+            <div class="carousel-item active">
+              <img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1400&q=80" class="hero-img-box" alt="Koleksi Musim Ini">
+              <div class="hero-caption-box">
+                <div class="container">
+                  <div class="col-12 col-lg-6">
+                    <span class="badge bg-ch-orange mb-2 px-2 py-1 tracking-wide">LIMITED OFFER</span>
+                    <h1 class="fw-extrabold display-6 mb-2">Koleksi Linen & Katun Esensial</h1>
+                    <p class="small text-white-50 mb-3">Siluet bersih dan material sejuk dirancang untuk kenyamanan sepanjang hari.</p>
+                    <div class="d-flex align-items-baseline gap-2 mb-3 tabular-nums">
+                      <span class="fs-4 fw-extrabold text-white">Rp 299.000</span>
+                      <span class="small text-decoration-line-through text-white-50">Rp 399.000</span>
+                    </div>
+                    <a href="#catalogAnchor" class="btn btn-uq-red px-4 py-2 text-uppercase tracking-wide" style="font-size: 0.8rem;">
+                      Lihat Koleksi
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Banner 2 -->
+            <div class="carousel-item">
+              <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1400&q=80" class="hero-img-box" alt="Koleksi Wanita">
+              <div class="hero-caption-box">
+                <div class="container">
+                  <div class="col-12 col-lg-6">
+                    <span class="badge bg-ch-teal mb-2 px-2 py-1 tracking-wide">KOLEKSI WANITA</span>
+                    <h1 class="fw-extrabold display-6 mb-2">Gaya Kasual Modern & Minimalis</h1>
+                    <p class="small text-white-50 mb-3">Gunakan kode kupon <strong class="text-white">PROMO10</strong> saat checkout untuk potongan 10%.</p>
+                    <button onclick="selectCategory('Wanita')" class="btn btn-uq-red px-4 py-2 text-uppercase tracking-wide" style="font-size: 0.8rem;">
+                      Belanja Wanita
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Banner 3 -->
+            <div class="carousel-item">
+              <img src="https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=1400&q=80" class="hero-img-box" alt="Koleksi Anak">
+              <div class="hero-caption-box">
+                <div class="container">
+                  <div class="col-12 col-lg-6">
+                    <span class="badge bg-ch-teal mb-2 px-2 py-1 tracking-wide">KOLEKSI ANAK</span>
+                    <h1 class="fw-extrabold display-6 mb-2">Lembut & Bebas Bergerak</h1>
+                    <p class="small text-white-50 mb-3">100% Cotton Combed pilihan yang ramah untuk kulit anak aktif.</p>
+                    <button onclick="selectCategory('Anak')" class="btn btn-uq-red px-4 py-2 text-uppercase tracking-wide" style="font-size: 0.8rem;">
+                      Belanja Anak
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button class="carousel-control-prev" type="button" data-bs-target="#lifewearCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+          </button>
+          <button class="carousel-control-next" type="button" data-bs-target="#lifewearCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Section Katalog Produk -->
+      <section id="catalogAnchor" class="container mb-5">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end border-bottom border-ch pb-3 mb-3 gap-2">
+          <div>
+            <div class="text-uppercase text-ch-teal fw-bold tracking-wide" style="font-size: 0.72rem;">CURATED COLLECTION</div>
+            <h2 class="h4 fw-extrabold mb-0 text-uppercase">Katalog Produk</h2>
+          </div>
+
+          <div class="d-flex align-items-center gap-2">
+            <span class="small text-muted d-none d-sm-inline" id="productCountLabel">8 Produk</span>
+            <select id="sortProductsSelect" class="form-select form-select-sm border-ch" style="width: 170px;" onchange="handleSortChange(this.value)">
+              <option value="featured">Urutkan: Unggulan</option>
+              <option value="newest">Terbaru</option>
+              <option value="price-low">Harga: Rendah - Tinggi</option>
+              <option value="price-high">Harga: Tinggi - Rendah</option>
+              <option value="rating">Rating Tertinggi</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Horizontal Scrollable Category Pills (Mobile Friendly) -->
+        <div class="category-scroll-strip mb-4" id="categoryTabsContainer">
+          <button type="button" class="cat-tab-btn active" onclick="selectCategory('Semua')">Semua</button>
+          <button type="button" class="cat-tab-btn" onclick="selectCategory('Wanita')">Wanita</button>
+          <button type="button" class="cat-tab-btn" onclick="selectCategory('Pria')">Pria</button>
+          <button type="button" class="cat-tab-btn" onclick="selectCategory('Anak')">Anak</button>
+        </div>
+
+        <!-- Grid Produk: 2 Kolom di Mobile (col-6), 4 Kolom di Desktop (col-lg-3) -->
+        <div id="mainCatalogGrid" class="row g-2 g-md-4">
+          <!-- Dirender melalui JavaScript -->
+        </div>
+      </section>
+
+      <!-- ================================================================= -->
+      <!-- FITUR UTAMA TOPIK 01: SECTION REKOMENDASI PRODUK UNTUKMU          -->
+      <!-- ================================================================= -->
+      <section class="py-5 border-top border-bottom border-ch bg-white">
+        <div class="container">
+          <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-end mb-4 gap-2">
+            <div>
+              <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                <span class="badge bg-ch-charcoal tracking-wide" style="font-size: 0.68rem;">REKOMENDASI UNTUKMU</span>
+                <span id="recReasonTag" class="badge bg-ch-teal tracking-wide" style="font-size: 0.68rem;">POPULER & RATING TERTINGGI</span>
+              </div>
+              <h2 class="h4 fw-extrabold mb-0 text-uppercase mt-1">Pilihan Produk yang Disarankan</h2>
+            </div>
+            <p class="small text-muted mb-0">Menyesuaikan kategori pakaian yang terakhir kamu pilih atau lihat.</p>
+          </div>
+
+          <!-- Grid Rekomendasi: 2 Kolom di Mobile, 4 Kolom di Desktop -->
+          <div id="recommendedProductsGrid" class="row g-2 g-md-4">
+            <!-- Dirender dinamis oleh updateRecommendations() -->
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- HALAMAN 1.2: DETAIL PRODUK & ULASAN PEMBELI                         -->
+    <!-- =================================================================== -->
+    <section id="page-user-detail" class="view-section container py-3 py-md-4">
+      <div class="bg-white border border-ch p-3 p-md-4">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-3">
+          <ol class="breadcrumb small mb-0">
+            <li class="breadcrumb-item"><a class="text-ch-charcoal text-decoration-none fw-semibold" style="cursor: pointer;" onclick="navigateUser('home')">Beranda</a></li>
+            <li class="breadcrumb-item text-uppercase" id="pdpBreadcrumbCat">Pria</li>
+            <li class="breadcrumb-item active text-truncate" style="max-width: 180px;" id="pdpBreadcrumbTitle">Nama Produk</li>
+          </ol>
+        </nav>
+
+        <div class="row g-4 mb-5">
+          <!-- Kiri: Foto Produk -->
+          <div class="col-12 col-lg-6">
+            <div class="uq-img-ratio border border-ch">
+              <img id="pdpImage" src="" alt="Foto Produk">
+            </div>
+          </div>
+
+          <!-- Kanan: Spesifikasi, Warna, Ukuran, Harga & Aksi -->
+          <div class="col-12 col-lg-6">
+            <div class="d-flex justify-content-between align-items-center text-muted small mb-1">
+              <span id="pdpCodeLabel">Kode Produk: PRD01</span>
+              <span class="text-ch-charcoal fw-semibold"><i class="bi bi-star-fill text-ch-orange"></i> <span id="pdpRatingVal">4.9</span> (<span id="pdpReviewCountVal">2</span> Ulasan)</span>
+            </div>
+
+            <h1 id="pdpTitle" class="h3 fw-extrabold mb-2">Jaket Denim Wash Klasik</h1>
+
+            <!-- Harga & Tag Promo -->
+            <div class="mb-3 pb-3 border-bottom border-ch tabular-nums">
+              <div id="pdpPromoArea" style="display: none;">
+                <div class="limited-tag mb-1">Limited Offer</div>
+                <div class="d-flex align-items-baseline gap-2">
+                  <span id="pdpSalePrice" class="fs-3 fw-extrabold text-ch-orange">Rp 299.000</span>
+                  <span id="pdpOrigPrice" class="price-strike">Rp 399.000</span>
+                </div>
+              </div>
+              <div id="pdpRegularArea">
+                <span id="pdpRegPrice" class="fs-3 fw-extrabold text-ch-charcoal">Rp 299.000</span>
+              </div>
+            </div>
+
+            <p id="pdpShortDesc" class="small text-secondary mb-4 lh-base">Deskripsi singkat produk.</p>
+
+            <!-- Pilihan Warna (Swatches) -->
+            <div class="mb-3">
+              <div class="small fw-bold text-uppercase tracking-wide mb-2">Warna: <span id="pdpSelectedColorName" class="fw-normal text-muted">Indigo Blue</span></div>
+              <div class="d-flex gap-2" id="pdpColorSwatches"></div>
+            </div>
+
+            <!-- Pilihan Ukuran -->
+            <div class="mb-4">
+              <div class="small fw-bold text-uppercase tracking-wide mb-2">Ukuran: <span id="pdpSelectedSizeName" class="fw-normal text-muted">M</span></div>
+              <div class="d-flex flex-wrap gap-2" id="pdpSizeButtons">
+                <button type="button" class="uq-size-btn" onclick="selectPdpSize(this, 'S')">S</button>
+                <button type="button" class="uq-size-btn active" onclick="selectPdpSize(this, 'M')">M</button>
+                <button type="button" class="uq-size-btn" onclick="selectPdpSize(this, 'L')">L</button>
+                <button type="button" class="uq-size-btn" onclick="selectPdpSize(this, 'XL')">XL</button>
+              </div>
+            </div>
+
+            <!-- Kuantitas & Tombol Tambah ke Keranjang -->
+            <div class="mb-4">
+              <div class="small fw-bold text-uppercase tracking-wide mb-2">Jumlah (Stok: <span id="pdpStockCount">20</span>)</div>
+              <div class="d-flex gap-2">
+                <div class="input-group" style="width: 125px;">
+                  <button class="btn btn-uq-outline" type="button" onclick="stepPdpQty(-1)">-</button>
+                  <input type="text" id="pdpQtyField" class="form-control text-center fw-bold border-ch" value="1" readonly>
+                  <button class="btn btn-uq-outline" type="button" onclick="stepPdpQty(1)">+</button>
+                </div>
+                <button type="button" id="pdpAddCartBtn" class="btn btn-uq-red flex-grow-1" onclick="addPdpToCart()">
+                  Tambah ke Keranjang
+                </button>
+              </div>
+            </div>
+
+            <!-- Accordion Detail Material & Panduan Ukuran -->
+            <div class="accordion" id="pdpAccordion">
+              <div class="accordion-item border-start-0 border-end-0 border-ch">
+                <h2 class="accordion-header">
+                  <button class="accordion-button fw-bold small text-uppercase tracking-wide bg-white text-ch-charcoal shadow-none px-0" type="button" data-bs-toggle="collapse" data-bs-target="#accMaterial">
+                    Deskripsi & Detail Material
+                  </button>
+                </h2>
+                <div id="accMaterial" class="accordion-collapse collapse show" data-bs-parent="#pdpAccordion">
+                  <div class="accordion-body px-0 pt-0 small text-secondary lh-lg">
+                    <div><strong>Material:</strong> <span id="pdpMaterialInfo">100% Katun Linen</span></div>
+                    <div><strong>Instruksi Pencucian:</strong> Dicuci dengan mesin menggunakan air dingin, siklus lembut. Jangan gunakan pemutih.</div>
+                  </div>
+                </div>
+              </div>
+              <div class="accordion-item border-start-0 border-end-0 border-ch">
+                <h2 class="accordion-header">
+                  <button class="accordion-button collapsed fw-bold small text-uppercase tracking-wide bg-white text-ch-charcoal shadow-none px-0" type="button" data-bs-toggle="collapse" data-bs-target="#accSizeGuide">
+                    Panduan Ukuran (Size Chart)
+                  </button>
+                </h2>
+                <div id="accSizeGuide" class="accordion-collapse collapse" data-bs-parent="#pdpAccordion">
+                  <div class="accordion-body px-0 pt-0">
+                    <div class="table-responsive">
+                      <table class="table table-sm table-bordered small text-center mb-0 border-ch">
+                        <thead class="bg-ch-cream">
+                          <tr><th>Ukuran</th><th>Panjang Belakang</th><th>Lebar Dada</th><th>Panjang Lengan</th></tr>
+                        </thead>
+                        <tbody>
+                          <tr><td>S</td><td>68 cm</td><td>51 cm</td><td>58 cm</td></tr>
+                          <tr><td>M</td><td>70 cm</td><td>54 cm</td><td>60 cm</td></tr>
+                          <tr><td>L</td><td>72 cm</td><td>57 cm</td><td>61.5 cm</td></tr>
+                          <tr><td>XL</td><td>74 cm</td><td>60 cm</td><td>63 cm</td></tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bagian Ulasan Pelanggan -->
+        <div class="border-top border-ch pt-4 mb-5">
+          <h3 class="h5 fw-extrabold text-uppercase tracking-wide mb-4">Ulasan Pelanggan</h3>
+          <div class="row g-4">
+            <div class="col-12 col-lg-7" id="pdpReviewsContainer">
+              <!-- Daftar ulasan dirender via JS -->
+            </div>
+            <div class="col-12 col-lg-5">
+              <div class="p-3 p-md-4 border border-ch bg-ch-cream">
+                <h6 class="fw-bold text-uppercase tracking-wide mb-3">Tulis Ulasan Produk</h6>
+                <form onsubmit="handleAddReview(event)">
+                  <div class="mb-2">
+                    <label class="form-label small fw-semibold">Nama Lengkap</label>
+                    <input type="text" id="revInputName" class="form-control form-control-sm border-ch" value="Zaid Nashrudin" required>
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label small fw-semibold">Rating</label>
+                    <select id="revInputRating" class="form-select form-select-sm border-ch">
+                      <option value="5">★★★★★ (5 - Sangat Baik)</option>
+                      <option value="4">★★★★☆ (4 - Baik)</option>
+                      <option value="3">★★★☆☆ (3 - Cukup)</option>
+                      <option value="2">★★☆☆☆ (2 - Kurang)</option>
+                      <option value="1">★☆☆☆☆ (1 - Buruk)</option>
+                    </select>
+                  </div>
+                  <div class="mb-3">
+                    <label class="form-label small fw-semibold">Komentar Ulasan</label>
+                    <textarea id="revInputComment" class="form-control form-control-sm border-ch" rows="3" placeholder="Bagaimana kesesuaian ukuran dan kenyamanan bahannya?" required></textarea>
+                  </div>
+                  <button type="submit" class="btn btn-uq-black w-100">Kirim Ulasan</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Produk Serupa -->
+        <div class="border-top border-ch pt-4">
+          <h3 class="h5 fw-extrabold text-uppercase tracking-wide mb-3">Produk Serupa yang Direkomendasikan</h3>
+          <div id="pdpSimilarGrid" class="row g-2 g-md-4"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- HALAMAN 1.3: KERANJANG BELANJA & PEMBAYARAN (CHECKOUT)              -->
+    <!-- =================================================================== -->
+    <section id="page-user-cart" class="view-section container py-3 py-md-4">
+      <div class="d-flex justify-content-between align-items-center border-bottom border-ch pb-3 mb-4">
+        <h1 class="h4 fw-extrabold text-uppercase mb-0">Keranjang Belanja</h1>
+        <button class="btn btn-uq-outline btn-sm px-3" onclick="navigateUser('home')">Lanjut Belanja</button>
+      </div>
+
+      <div class="row g-4">
+        <!-- Daftar Item Keranjang -->
+        <div class="col-12 col-lg-7">
+          <div id="cartItemsContainer" class="mb-4">
+            <!-- Dirender via JS (responsif di mobile & desktop) -->
+          </div>
+
+          <!-- Kupon Promo -->
+          <div class="p-3 border border-ch bg-white">
+            <label class="form-label small fw-bold text-uppercase tracking-wide">Gunakan Kupon Diskon</label>
+            <div class="input-group input-group-sm" style="max-width: 380px;">
+              <input type="text" id="promoCodeInput" class="form-control text-uppercase border-ch" placeholder="Masukkan kode: FASHION10 / HEMAT50">
+              <button class="btn btn-uq-black" type="button" onclick="applyPromoCode()">Terapkan</button>
+            </div>
+            <small id="promoStatusText" class="d-block mt-2 text-muted">Kupon tersedia: <strong>FASHION10</strong> (10%), <strong>HEMAT50</strong> (Rp 50.000), <strong>PBLPENS</strong> (20%).</small>
+          </div>
+        </div>
+
+        <!-- Ringkasan & Form Pembayaran -->
+        <div class="col-12 col-lg-5">
+          <div class="border border-ch p-3 p-md-4 bg-white">
+            <h5 class="fw-extrabold text-uppercase tracking-wide border-bottom border-ch pb-2 mb-3">Ringkasan & Pembayaran</h5>
+
+            <!-- Rincian Biaya -->
+            <div class="small tabular-nums mb-3">
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Subtotal Produk</span>
+                <span class="fw-semibold" id="cartSubtotalText">Rp 0</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2 text-ch-orange">
+                <span>Potongan Kupon</span>
+                <span class="fw-semibold" id="cartDiscountText">- Rp 0</span>
+              </div>
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Pengiriman Standar</span>
+                <span class="fw-semibold" id="cartShippingText">Rp 15.000</span>
+              </div>
+              <div class="d-flex justify-content-between border-top border-ch pt-2 mt-2 fs-6 fw-extrabold">
+                <span>TOTAL PEMBAYARAN</span>
+                <span class="text-ch-orange" id="cartGrandTotalText">Rp 0</span>
+              </div>
+            </div>
+
+            <!-- Formulir Checkout -->
+            <form onsubmit="submitOrderCheckout(event)">
+              <div class="mb-2">
+                <label class="form-label small fw-semibold">Nama Penerima</label>
+                <input type="text" id="chkReceiverName" class="form-control form-control-sm border-ch" value="Zaid Nashrudin" required>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small fw-semibold">No. WhatsApp</label>
+                <input type="text" id="chkReceiverPhone" class="form-control form-control-sm border-ch" value="0812-3456-7890" required>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small fw-semibold">Alamat Lengkap Pengiriman</label>
+                <textarea id="chkReceiverAddress" class="form-control form-control-sm border-ch" rows="2" required>Jl. Raya ITS, Keputih, Kec. Sukolilo, Kota Surabaya 60111</textarea>
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Metode Pembayaran</label>
+                <select id="chkPaymentMethod" class="form-select form-select-sm border-ch" required>
+                  <option value="Transfer Bank BCA (Virtual Account)">Transfer Bank BCA (VA)</option>
+                  <option value="Transfer Bank Mandiri">Transfer Bank Mandiri</option>
+                  <option value="QRIS / E-Wallet (GoPay, OVO, Dana)">QRIS / E-Wallet</option>
+                  <option value="COD (Bayar di Tempat)">COD (Bayar di Tempat)</option>
+                </select>
+              </div>
+
+              <button type="submit" class="btn btn-uq-red w-100">Bayar Sekarang</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- HALAMAN 1.4: PROFIL PENGGUNA & RIWAYAT PESANAN                      -->
+    <!-- =================================================================== -->
+    <section id="page-user-profile" class="view-section container py-3 py-md-4">
+      <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom border-ch pb-3 mb-4 gap-2">
+        <h1 class="h4 fw-extrabold text-uppercase mb-0">Akun & Riwayat Pesanan</h1>
+        <button class="btn btn-uq-black btn-sm" onclick="switchRole('admin')">
+          <i class="bi bi-speedometer2 me-1"></i> Beralih ke Admin Panel
+        </button>
+      </div>
+
+      <div class="row g-4">
+        <!-- Data Profil -->
+        <div class="col-12 col-lg-4">
+          <div class="border border-ch p-3 p-md-4 bg-white">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="bg-ch-teal d-flex align-items-center justify-content-center fw-extrabold" style="width: 48px; height: 48px; font-size: 1rem;">ZN</div>
+              <div>
+                <h6 class="fw-bold mb-0" id="profHeaderName">Zaid Nashrudin</h6>
+                <small class="text-muted">Anggota Terdaftar</small>
+              </div>
+            </div>
+            <form onsubmit="updateProfileInfo(event)">
+              <div class="mb-2">
+                <label class="form-label small fw-semibold">Nama Lengkap</label>
+                <input type="text" id="profInputName" class="form-control form-control-sm border-ch" value="Zaid Nashrudin" required>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small fw-semibold">Email</label>
+                <input type="email" id="profInputEmail" class="form-control form-control-sm border-ch" value="zaid.nashrudin@student.pens.ac.id" required>
+              </div>
+              <div class="mb-2">
+                <label class="form-label small fw-semibold">Nomor WhatsApp</label>
+                <input type="text" id="profInputPhone" class="form-control form-control-sm border-ch" value="0812-3456-7890" required>
+              </div>
+              <div class="mb-3">
+                <label class="form-label small fw-semibold">Alamat Utama</label>
+                <textarea id="profInputAddress" class="form-control form-control-sm border-ch" rows="2" required>Jl. Raya ITS, Keputih, Kec. Sukolilo, Surabaya</textarea>
+              </div>
+              <button type="submit" class="btn btn-uq-black w-100">Simpan Profil</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Riwayat Pesanan -->
+        <div class="col-12 col-lg-8">
+          <h5 class="fw-extrabold text-uppercase tracking-wide mb-3">Riwayat Transaksi Saya</h5>
+          <div id="userOrdersListContainer">
+            <!-- Dirender via JS (responsif di HP & Laptop) -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer Minimalis dengan Kotak Logo Kosong -->
+    <footer class="border-top border-ch py-4 mt-5 no-print bg-white">
+      <div class="container">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 small text-muted">
+          <div class="d-flex align-items-center gap-3">
+            <img src="assets/logo-bajuku.png" class="logo-empty-box-sm" alt="Logo BajuKu">
+            <span>&copy; 2026 Tugas PBL Workshop Desain Web (Bootstrap 5) — Topik 01 E-Commerce Fashion.</span>
+          </div>
+          <div>Penyusun: <strong class="text-ch-charcoal">Zaid Nashrudin</strong> (3126521001)</div>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Mobile Fixed Bottom Navigation Bar (< 992px) -->
+    <nav class="mobile-bottom-nav fixed-bottom d-flex d-lg-none no-print">
+      <button type="button" class="mobile-nav-item active" id="mNavHome" onclick="navigateUser('home'); selectCategory('Semua')">
+        <i class="bi bi-house"></i>
+        <span>Beranda</span>
+      </button>
+      <button type="button" class="mobile-nav-item" data-bs-toggle="offcanvas" data-bs-target="#mobileCategoryDrawer">
+        <i class="bi bi-grid"></i>
+        <span>Kategori</span>
+      </button>
+      <button type="button" class="mobile-nav-item" id="mNavCart" onclick="navigateUser('cart')">
+        <i class="bi bi-bag"></i>
+        <span>Keranjang</span>
+        <span id="mobileCartBadge" class="position-absolute top-0 start-50 translate-middle-x ms-3 mt-1 badge bg-ch-orange" style="font-size: 0.6rem;">0</span>
+      </button>
+      <button type="button" class="mobile-nav-item" id="mNavProfile" onclick="navigateUser('profile')">
+        <i class="bi bi-person"></i>
+        <span>Akun</span>
+      </button>
+    </nav>
+
+    <!-- Offcanvas Drawer Kategori untuk Mobile -->
+    <div class="offcanvas offcanvas-start bg-white" tabindex="-1" id="mobileCategoryDrawer" style="max-width: 290px;">
+      <div class="offcanvas-header border-bottom border-ch">
+        <div class="d-flex align-items-center gap-2">
+          <img src="assets/logo-bajuku.png" class="logo-empty-box-sm" alt="Logo BajuKu">
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas"></button>
+      </div>
+      <div class="offcanvas-body p-0">
+        <div class="list-group list-group-flush">
+          <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small" data-bs-dismiss="offcanvas" onclick="navigateUser('home'); selectCategory('Semua')">Semua Produk</button>
+          <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small" data-bs-dismiss="offcanvas" onclick="navigateUser('home'); selectCategory('Wanita')">Wanita (Women)</button>
+          <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small" data-bs-dismiss="offcanvas" onclick="navigateUser('home'); selectCategory('Pria')">Pria (Men)</button>
+          <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small" data-bs-dismiss="offcanvas" onclick="navigateUser('home'); selectCategory('Anak')">Anak (Kids)</button>
+          <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small text-ch-orange" data-bs-dismiss="offcanvas" onclick="switchRole('admin')">
+            <i class="bi bi-speedometer2 me-2"></i>Masuk Panel Admin
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+
+  <!-- ===================================================================== -->
+  <!-- 2. SISI PENGELOLA (ADMIN DASHBOARD RESPONSIF)                         -->
+  <!-- ===================================================================== -->
+  <div id="adminDashboardView" style="display: none;">
+    <div class="container-fluid px-0">
+      <div class="row g-0">
+
+        <!-- Sidebar Desktop (>= 992px) -->
+        <aside class="col-lg-2 d-none d-lg-block admin-sidebar-desktop p-3 no-print">
+          <div class="d-flex align-items-center justify-content-between pb-3 mb-3 border-bottom border-secondary">
+            <img src="assets/logo-bajuku.png" class="logo-empty-box-light" alt="Logo BajuKu">
+            <span class="badge bg-ch-teal" style="font-size: 0.65rem;">ADMIN</span>
+          </div>
+
+          <button class="admin-menu-btn active" id="admMenu-dashboard" onclick="navigateAdmin('dashboard')"><i class="bi bi-bar-chart"></i> Dashboard & Laporan</button>
+          <button class="admin-menu-btn" id="admMenu-products" onclick="navigateAdmin('products')"><i class="bi bi-box-seam"></i> Manajemen Produk</button>
+          <button class="admin-menu-btn" id="admMenu-orders" onclick="navigateAdmin('orders')"><i class="bi bi-receipt"></i> Manajemen Pesanan</button>
+          <button class="admin-menu-btn" id="admMenu-discounts" onclick="navigateAdmin('discounts')"><i class="bi bi-percent"></i> Manajemen Diskon</button>
+
+          <div class="mt-4 pt-3 border-top border-secondary">
+            <button class="btn btn-outline-light btn-sm w-100" onclick="switchRole('user')">
+              <i class="bi bi-shop me-1"></i> Ke Toko User
+            </button>
+          </div>
+        </aside>
+
+        <!-- Konten Utama Admin -->
+        <div class="col-12 col-lg-10 bg-ch-cream min-vh-100">
+          <!-- Header Admin -->
+          <div class="border-bottom border-ch px-3 px-md-4 py-3 d-flex justify-content-between align-items-center bg-white sticky-top no-print" style="top: 29px; z-index: 1030;">
+            <div class="d-flex align-items-center gap-2">
+              <button class="btn btn-uq-outline btn-sm d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminMobileDrawer">
+                <i class="bi bi-list"></i> Menu
+              </button>
+              <h1 class="h5 fw-extrabold text-uppercase mb-0" id="adminHeaderTitle">Dashboard & Laporan Penjualan</h1>
+            </div>
+            <button class="btn btn-uq-outline btn-sm d-lg-none" onclick="switchRole('user')">Toko</button>
+          </div>
+
+          <!-- Offcanvas Sidebar Mobile Admin -->
+          <div class="offcanvas offcanvas-start bg-ch-charcoal text-white" tabindex="-1" id="adminMobileDrawer" style="max-width: 270px;">
+            <div class="offcanvas-header border-bottom border-secondary">
+              <img src="assets/logo-bajuku.png" class="logo-empty-box-light" alt="Logo BajuKu">
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+            </div>
+            <div class="offcanvas-body p-2">
+              <button class="admin-menu-btn" data-bs-dismiss="offcanvas" onclick="navigateAdmin('dashboard')"><i class="bi bi-bar-chart"></i> Dashboard & Laporan</button>
+              <button class="admin-menu-btn" data-bs-dismiss="offcanvas" onclick="navigateAdmin('products')"><i class="bi bi-box-seam"></i> Manajemen Produk</button>
+              <button class="admin-menu-btn" data-bs-dismiss="offcanvas" onclick="navigateAdmin('orders')"><i class="bi bi-receipt"></i> Manajemen Pesanan</button>
+              <button class="admin-menu-btn" data-bs-dismiss="offcanvas" onclick="navigateAdmin('discounts')"><i class="bi bi-percent"></i> Manajemen Diskon</button>
+              <hr class="border-secondary">
+              <button class="btn btn-light btn-sm w-100 fw-bold" data-bs-dismiss="offcanvas" onclick="switchRole('user')">Kembali ke Toko User</button>
+            </div>
+          </div>
+
+          <div class="p-3 p-md-4">
+
+            <!-- 2.1 MODUL: DASHBOARD & LAPORAN PENJUALAN -->
+            <div id="admin-sec-dashboard" class="admin-subview">
+              <!-- 4 KPI Cards (2 kolom di HP, 4 kolom di Laptop) -->
+              <div class="row g-2 g-md-3 mb-4 tabular-nums">
+                <div class="col-6 col-xl-3">
+                  <div class="border border-ch p-3 bg-white">
+                    <div class="small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Total Pendapatan</div>
+                    <div class="fs-5 fw-extrabold mt-1 text-ch-charcoal" id="admKpiRevenue">Rp 0</div>
+                  </div>
+                </div>
+                <div class="col-6 col-xl-3">
+                  <div class="border border-ch p-3 bg-white">
+                    <div class="small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Total Pesanan</div>
+                    <div class="fs-5 fw-extrabold mt-1 text-ch-teal" id="admKpiOrders">0 Order</div>
+                  </div>
+                </div>
+                <div class="col-6 col-xl-3">
+                  <div class="border border-ch p-3 bg-white">
+                    <div class="small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Katalog Produk</div>
+                    <div class="fs-5 fw-extrabold mt-1 text-ch-charcoal" id="admKpiProducts">8 Item</div>
+                  </div>
+                </div>
+                <div class="col-6 col-xl-3">
+                  <div class="border border-ch p-3 bg-white">
+                    <div class="small text-muted text-uppercase fw-bold" style="font-size: 0.7rem;">Rating Rata-rata</div>
+                    <div class="fs-5 fw-extrabold mt-1 text-ch-orange" id="admKpiRating">4.8 ★</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Grafik Penjualan + Rekap Laporan -->
+              <div class="row g-4 mb-4">
+                <div class="col-12 col-lg-7">
+                  <div class="border border-ch p-3 p-md-4 h-100 bg-white">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                      <h6 class="fw-bold text-uppercase tracking-wide mb-0">Grafik Penjualan Bulanan</h6>
+                      <button class="btn btn-uq-outline btn-sm" onclick="window.print()"><i class="bi bi-printer me-1"></i>Cetak</button>
+                    </div>
+                    <div style="height: 250px;">
+                      <canvas id="uqSalesChart"></canvas>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-12 col-lg-5">
+                  <div class="border border-ch p-3 p-md-4 h-100 bg-white">
+                    <h6 class="fw-bold text-uppercase tracking-wide mb-3">Kontribusi Kategori</h6>
+                    <div class="mb-3">
+                      <div class="d-flex justify-content-between small fw-semibold mb-1"><span>Wanita (Women)</span><span>48%</span></div>
+                      <div class="progress bg-ch-cream" style="height: 7px;"><div class="progress-bar bg-ch-teal" style="width: 48%"></div></div>
+                    </div>
+                    <div class="mb-3">
+                      <div class="d-flex justify-content-between small fw-semibold mb-1"><span>Pria (Men)</span><span>34%</span></div>
+                      <div class="progress bg-ch-cream" style="height: 7px;"><div class="progress-bar bg-ch-orange" style="width: 34%"></div></div>
+                    </div>
+                    <div class="mb-3">
+                      <div class="d-flex justify-content-between small fw-semibold mb-1"><span>Anak (Kids)</span><span>18%</span></div>
+                      <div class="progress bg-ch-cream" style="height: 7px;"><div class="progress-bar bg-ch-charcoal" style="width: 18%"></div></div>
+                    </div>
+                    <hr class="border-ch">
+                    <p class="small text-muted mb-0">Data laporan diperbarui otomatis setiap kali pelanggan menyelesaikan pembayaran.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tabel Laporan Penjualan -->
+              <div class="border border-ch p-3 p-md-4 bg-white">
+                <h6 class="fw-bold text-uppercase tracking-wide mb-3">Rekap Laporan Penjualan</h6>
+                <div class="table-responsive">
+                  <table class="table table-bordered table-sm align-middle small mb-0 tabular-nums border-ch">
+                    <thead class="bg-ch-cream text-uppercase">
+                      <tr>
+                        <th>ID Order</th>
+                        <th>Tanggal</th>
+                        <th>Pelanggan</th>
+                        <th>Item</th>
+                        <th>Status</th>
+                        <th>Total</th>
+                      </tr>
+                    </thead>
+                    <tbody id="admSalesReportBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2.2 MODUL: MANAJEMEN PRODUK (DENGAN UPLOAD GAMBAR LOKAL) -->
+            <div id="admin-sec-products" class="admin-subview" style="display: none;">
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3 bg-white border border-ch p-3">
+                <p class="small text-muted mb-0">Tambahkan produk baru beserta unggahan foto dari perangkatmu agar langsung tampil di katalog toko.</p>
+                <button class="btn btn-uq-red btn-sm" onclick="openAdminProductModal()">
+                  <i class="bi bi-plus-lg me-1"></i> Tambah Produk Baru
+                </button>
+              </div>
+
+              <div class="table-responsive border border-ch bg-white">
+                <table class="table table-hover align-middle small mb-0 tabular-nums">
+                  <thead class="bg-ch-cream text-uppercase">
+                    <tr>
+                      <th>Kode</th>
+                      <th>Produk</th>
+                      <th>Kategori</th>
+                      <th>Stok</th>
+                      <th>Harga</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admProductsBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 2.3 MODUL: MANAJEMEN PESANAN -->
+            <div id="admin-sec-orders" class="admin-subview" style="display: none;">
+              <div class="category-scroll-strip mb-3">
+                <button class="cat-tab-btn active" onclick="filterOrdersAdmin('Semua', this)">Semua</button>
+                <button class="cat-tab-btn" onclick="filterOrdersAdmin('Menunggu Verifikasi', this)">Perlu Verifikasi</button>
+                <button class="cat-tab-btn" onclick="filterOrdersAdmin('Diproses', this)">Diproses</button>
+                <button class="cat-tab-btn" onclick="filterOrdersAdmin('Dikirim', this)">Dikirim</button>
+                <button class="cat-tab-btn" onclick="filterOrdersAdmin('Selesai', this)">Selesai</button>
+              </div>
+
+              <div class="table-responsive border border-ch bg-white">
+                <table class="table table-hover align-middle small mb-0 tabular-nums">
+                  <thead class="bg-ch-cream text-uppercase">
+                    <tr>
+                      <th>ID Order</th>
+                      <th>Pelanggan</th>
+                      <th>Rincian Item</th>
+                      <th>Pembayaran</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>Ubah Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="admOrdersBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 2.4 MODUL: MANAJEMEN DISKON -->
+            <div id="admin-sec-discounts" class="admin-subview" style="display: none;">
+              <div class="row g-4">
+                <div class="col-12 col-lg-4">
+                  <div class="border border-ch p-3 p-md-4 bg-white">
+                    <h6 class="fw-bold text-uppercase tracking-wide mb-3">Buat Kupon Diskon</h6>
+                    <form onsubmit="createCouponAdmin(event)">
+                      <div class="mb-2">
+                        <label class="form-label small fw-semibold">Kode Kupon</label>
+                        <input type="text" id="admCouponCode" class="form-control form-control-sm text-uppercase border-ch" placeholder="Misal: HEMAT15" required>
+                      </div>
+                      <div class="mb-2">
+                        <label class="form-label small fw-semibold">Tipe Potongan</label>
+                        <select id="admCouponType" class="form-select form-select-sm border-ch">
+                          <option value="percent">Persentase (%)</option>
+                          <option value="fixed">Nominal Tetap (Rp)</option>
+                        </select>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label small fw-semibold">Nilai Potongan</label>
+                        <input type="number" id="admCouponValue" class="form-control form-control-sm border-ch" placeholder="15 atau 50000" required>
+                      </div>
+                      <button type="submit" class="btn btn-uq-black w-100">Simpan Kupon</button>
+                    </form>
+                  </div>
+                </div>
+                <div class="col-12 col-lg-8">
+                  <div class="table-responsive border border-ch bg-white">
+                    <table class="table table-hover align-middle small mb-0 tabular-nums">
+                      <thead class="bg-ch-cream text-uppercase">
+                        <tr>
+                          <th>Kode Kupon</th>
+                          <th>Nilai Potongan</th>
+                          <th>Status</th>
+                          <th>Hapus</th>
+                        </tr>
+                      </thead>
+                      <tbody id="admCouponsBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 1: INVOICE DIGITAL & KONFIRMASI WHATSAPP                        -->
+  <!-- ===================================================================== -->
+  <div class="modal fade" id="invoiceDigitalModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border border-ch shadow">
+        <div class="modal-body p-4 bg-white" id="printableInvoiceArea">
+          <div class="d-flex justify-content-between align-items-center border-bottom border-ch pb-3 mb-3">
+            <div class="d-flex align-items-center gap-2">
+              <img src="assets/logo-bajuku.png" class="logo-empty-box-sm" alt="Logo BajuKu">
+              <div>
+                <div class="fw-extrabold small">INVOICE PEMBAYARAN</div>
+                <div class="text-muted" style="font-size: 0.72rem;" id="modalInvId">ORD-2026-004</div>
+              </div>
+            </div>
+            <span class="badge bg-ch-teal" id="modalInvStatus">Menunggu Verifikasi</span>
+          </div>
+
+          <div class="small mb-3 tabular-nums">
+            <div class="d-flex justify-content-between mb-1">
+              <span class="text-muted">Penerima:</span>
+              <strong id="modalInvCustomer">Zaid Nashrudin</strong>
+            </div>
+            <div class="d-flex justify-content-between mb-1">
+              <span class="text-muted">Metode Bayar:</span>
+              <strong id="modalInvMethod">Transfer Bank BCA</strong>
+            </div>
+            <div class="mt-2 pt-2 border-top border-ch">
+              <div class="text-muted mb-1">Rincian Item:</div>
+              <div class="fw-medium" id="modalInvItems">-</div>
+            </div>
+            <div class="d-flex justify-content-between border-top border-ch pt-2 mt-2 fs-6 fw-extrabold">
+              <span>TOTAL TAGIHAN</span>
+              <span class="text-ch-orange" id="modalInvTotal">Rp 0</span>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2 no-print">
+            <a id="modalInvWaLink" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-success fw-bold text-uppercase" style="font-size: 0.8rem; letter-spacing: 0.05em;">
+              <i class="bi bi-whatsapp me-1"></i> Konfirmasi via WhatsApp
+            </a>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-uq-outline w-50" onclick="window.print()">Cetak Struk</button>
+              <button type="button" class="btn btn-uq-black w-50" data-bs-dismiss="modal" onclick="navigateUser('profile')">Riwayat Order</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 2: FORM TAMBAH / EDIT PRODUK ADMIN (FILE UPLOAD + LIVE PREVIEW) -->
+  <!-- ===================================================================== -->
+  <div class="modal fade" id="adminProductModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content border border-ch shadow">
+        <div class="modal-header border-bottom border-ch bg-white">
+          <h6 class="modal-title fw-extrabold text-uppercase tracking-wide" id="admProdModalTitle">Tambah Produk Baru</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <form onsubmit="saveProductFromAdmin(event)">
+          <div class="modal-body bg-white">
+            <input type="hidden" id="admEditProdId">
+            <div class="row g-3">
+              <!-- Kiri: Unggah Foto Produk -->
+              <div class="col-12 col-md-5">
+                <label class="form-label small fw-bold text-uppercase">Foto Produk (Rasio 3:4)</label>
+                <div class="upload-box mb-2" onclick="document.getElementById('admProdFile').click()">
+                  <img id="admProdPreviewImg" src="" alt="Preview" style="display: none;">
+                  <div id="admProdUploadPrompt" class="text-center p-3 text-muted">
+                    <i class="bi bi-camera fs-2 d-block mb-1 text-ch-charcoal"></i>
+                    <span class="small fw-semibold d-block">Pilih Foto dari Perangkat</span>
+                    <span style="font-size: 0.7rem;">JPG, PNG, WEBP</span>
+                  </div>
+                </div>
+                <input type="file" id="admProdFile" class="form-control form-control-sm mb-2 border-ch" accept="image/*" onchange="onAdminFileSelected(this)">
+                <input type="url" id="admProdUrl" class="form-control form-control-sm border-ch" placeholder="Atau tempel URL gambar..." oninput="onAdminUrlTyped(this.value)">
+              </div>
+
+              <!-- Kanan: Spesifikasi Produk -->
+              <div class="col-12 col-md-7">
+                <div class="row g-2">
+                  <div class="col-4">
+                    <label class="form-label small fw-semibold">Kode</label>
+                    <input type="text" id="admProdCode" class="form-control form-control-sm text-uppercase border-ch" placeholder="PRD09" required>
+                  </div>
+                  <div class="col-8">
+                    <label class="form-label small fw-semibold">Nama Produk</label>
+                    <input type="text" id="admProdName" class="form-control form-control-sm border-ch" placeholder="Contoh: Jaket Parka Saku" required>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-semibold">Kategori</label>
+                    <select id="admProdCat" class="form-select form-select-sm border-ch">
+                      <option value="Wanita">Wanita</option>
+                      <option value="Pria">Pria</option>
+                      <option value="Anak">Anak</option>
+                    </select>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-semibold">Stok (pcs)</label>
+                    <input type="number" id="admProdStock" class="form-control form-control-sm border-ch" value="25" min="1" required>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-semibold">Harga Jual (Rp)</label>
+                    <input type="number" id="admProdPrice" class="form-control form-control-sm border-ch" placeholder="299000" min="1000" required>
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label small fw-semibold">Harga Coret / Asli (Opsional)</label>
+                    <input type="number" id="admProdOrigPrice" class="form-control form-control-sm border-ch" placeholder="Kosongkan jika normal">
+                  </div>
+                  <div class="col-12">
+                    <label class="form-label small fw-semibold">Deskripsi & Material</label>
+                    <textarea id="admProdDesc" class="form-control form-control-sm border-ch" rows="3" required>Material katun berkualitas tinggi dengan potongan minimalis yang nyaman sepanjang hari.</textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer border-top border-ch bg-ch-cream">
+            <button type="button" class="btn btn-uq-outline btn-sm" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-uq-red btn-sm">Simpan & Tayangkan</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bootstrap 5.3 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
