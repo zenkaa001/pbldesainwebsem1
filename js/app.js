@@ -177,16 +177,22 @@
         { productId: 'PRD02', size: 'L', color: 'Warm Cream', qty: 1 }
       ],
       coupons: [
+        { code: 'PROMO10', type: 'percent', value: 10, active: true },
         { code: 'FASHION10', type: 'percent', value: 10, active: true },
-        { code: 'HEMAT50', type: 'fixed', value: 50000, active: true },
-        
+        { code: 'HEMAT50', type: 'fixed', value: 50000, active: true }
       ],
+      userProfile: {
+        name: 'Zaid Nashrudin',
+        email: 'zaid.nashrudin@student.pens.ac.id',
+        phone: '085723312579',
+        address: 'Jl. Raya ITS, Keputih, Kec. Sukolilo, Surabaya'
+      },
       orders: [
         {
           id: 'ORD-2026-001',
           date: '19 Nov 2026',
           customer: 'Zaid Nashrudin',
-          phone: '08512366426512-3456-7890',
+          phone: '085723312579',
           itemsSummary: 'Jaket Denim Wash Klasik Pria (Indigo Blue, M x1)',
           method: 'Transfer Bank BCA (VA)',
           total: 414000,
@@ -196,7 +202,7 @@
           id: 'ORD-2026-002',
           date: '21 Nov 2026',
           customer: 'Zaid Nashrudin',
-          phone: '08512366426512-3456-7890',
+          phone: '085723312579',
           itemsSummary: 'Sweter Rajut Crew Neck Abu (Heather Gray, L x1)',
           method: 'QRIS / E-Wallet',
           total: 394000,
@@ -206,7 +212,7 @@
           id: 'ORD-2026-003',
           date: '22 Nov 2026',
           customer: 'Nadia Putri',
-          phone: '08512366426557-9988-7766',
+          phone: '085799887766',
           itemsSummary: 'Blazer Tailored Cream Minimalis (Warm Cream, M x1)',
           method: 'Transfer Bank Mandiri',
           total: 514000,
@@ -215,11 +221,16 @@
       ]
     };
 
-    let state = JSON.parse(localStorage.getItem(STATE_KEY)) || JSON.parse(JSON.stringify(initialCatalogData));
+    const storedState = JSON.parse(localStorage.getItem(STATE_KEY));
+    let state = storedState
+      ? { ...JSON.parse(JSON.stringify(initialCatalogData)), ...storedState }
+      : JSON.parse(JSON.stringify(initialCatalogData));
+    state.userProfile = { ...initialCatalogData.userProfile, ...(state.userProfile || {}) };
+    state.lastInterestCategory = state.lastInterestCategory || null;
 
     // Runtime UI States
     let selectedCategory = 'Semua';
-    let lastInterestCategory = null;
+    let lastInterestCategory = state.lastInterestCategory;
     let searchKeyword = '';
     let sortMode = 'featured';
     let activePromo = null;
@@ -230,10 +241,22 @@
     let adminOrderFilter = 'Semua';
     let uploadedBase64Image = '';
     let chartInstance = null;
+    const promoCouponAdded = !state.coupons.some(coupon => coupon.code.toUpperCase() === 'PROMO10');
+    if (promoCouponAdded) {
+      state.coupons.unshift({ code: 'PROMO10', type: 'percent', value: 10, active: true });
+    }
 
     // Helper Functions
     function saveState() {
-      localStorage.setItem(STATE_KEY, JSON.stringify(state));
+      state.lastInterestCategory = lastInterestCategory;
+      try {
+        localStorage.setItem(STATE_KEY, JSON.stringify(state));
+        return true;
+      } catch (error) {
+        console.error('Gagal menyimpan data demo ke penyimpanan lokal.', error);
+        showToast('Penyimpanan penuh atau tidak tersedia. Hapus beberapa data/gambar lalu coba lagi.');
+        return false;
+      }
     }
 
     function rupiah(num) {
@@ -259,6 +282,7 @@
     }
 
     function resetDemoState() {
+      if (!confirm('Atur ulang seluruh data demo ke kondisi awal?')) return;
       localStorage.removeItem(STATE_KEY);
       state = JSON.parse(JSON.stringify(initialCatalogData));
       activePromo = null;
@@ -266,6 +290,7 @@
       selectedCategory = 'Semua';
       lastInterestCategory = null;
       searchKeyword = '';
+      saveState();
       renderAllViews();
       showToast('Data demo berhasil diatur ulang ke kondisi awal.');
     }
@@ -295,7 +320,7 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function navigateUser(page) {
+    function navigateUser(page, scrollToTop = true) {
       document.querySelectorAll('#userStorefrontView .view-section').forEach(sec => sec.classList.remove('active'));
       const target = document.getElementById(`page-user-${page}`);
       if (target) target.classList.add('active');
@@ -311,7 +336,7 @@
         document.getElementById('mNavProfile')?.classList.add('active');
         renderProfileOrders();
       }
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (scrollToTop) window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function navigateAdmin(section) {
@@ -340,10 +365,11 @@
     // =========================================================================
     // CATALOG, FILTERING, SORTING & RECOMMENDATION ENGINE
     // =========================================================================
-    function selectCategory(cat) {
+    function selectCategory(cat, shouldScroll = false) {
       selectedCategory = cat;
       if (cat !== 'Semua') {
         lastInterestCategory = cat;
+        saveState();
       }
 
       document.querySelectorAll('[data-cat-nav]').forEach(el => {
@@ -356,6 +382,9 @@
 
       renderCatalog();
       renderRecommended();
+      if (shouldScroll) {
+        document.getElementById('catalogAnchor')?.scrollIntoView({ behavior: 'smooth' });
+      }
     }
 
     function handleSearchInput(val) {
@@ -461,7 +490,9 @@
           p =>
             p.name.toLowerCase().includes(searchKeyword) ||
             p.id.toLowerCase().includes(searchKeyword) ||
-            p.category.toLowerCase().includes(searchKeyword)
+            p.category.toLowerCase().includes(searchKeyword) ||
+            (p.desc || '').toLowerCase().includes(searchKeyword) ||
+            (p.material || '').toLowerCase().includes(searchKeyword)
         );
       }
 
@@ -490,17 +521,19 @@
       const reasonTag = document.getElementById('recReasonTag');
       if (!recGrid) return;
 
+      const cartProductIds = new Set(state.cart.map(item => item.productId));
+      const availableProducts = state.products.filter(p => !cartProductIds.has(p.id));
       let items = [];
       let cardBadge = 'POPULER';
 
       if (lastInterestCategory) {
-        const matched = state.products.filter(p => p.category === lastInterestCategory);
-        const others = state.products.filter(p => p.category !== lastInterestCategory).sort((a, b) => b.rating - a.rating);
+        const matched = availableProducts.filter(p => p.category === lastInterestCategory);
+        const others = availableProducts.filter(p => p.category !== lastInterestCategory).sort((a, b) => b.rating - a.rating);
         items = [...matched, ...others].slice(0, 4);
         cardBadge = `MINAT: ${lastInterestCategory.toUpperCase()}`;
         if (reasonTag) reasonTag.textContent = `BERDASARKAN KATEGORI ${lastInterestCategory.toUpperCase()}`;
       } else {
-        items = [...state.products].sort((a, b) => b.rating - a.rating).slice(0, 4);
+        items = [...availableProducts].sort((a, b) => b.rating - a.rating).slice(0, 4);
         cardBadge = 'REKOMENDASI';
         if (reasonTag) reasonTag.textContent = 'POPULER & RATING TERTINGGI';
       }
@@ -517,7 +550,9 @@
 
       currentPdpId = prodId;
       lastInterestCategory = p.category;
-      currentPdpSize = 'M';
+      saveState();
+      const sizes = p.category === 'Anak' ? ['110cm', '120cm', '130cm', '140cm', '150cm'] : ['S', 'M', 'L', 'XL'];
+      currentPdpSize = p.category === 'Anak' ? sizes[0] : 'M';
       const colors = p.colors || [{ name: 'Charcoal', hex: '#303841' }];
       currentPdpColor = cardSelectedColors[p.id] || colors[0].name;
 
@@ -547,11 +582,13 @@
       document.getElementById('pdpShortDesc').textContent = p.desc;
       document.getElementById('pdpMaterialInfo').textContent = p.material || '100% Katun Berkualitas Tinggi';
       document.getElementById('pdpStockCount').textContent = p.stock;
-      document.getElementById('pdpQtyField').value = '1';
+      document.getElementById('pdpQtyField').value = p.stock > 0 ? '1' : '0';
 
       const addBtn = document.getElementById('pdpAddCartBtn');
       addBtn.disabled = p.stock <= 0;
       addBtn.textContent = p.stock <= 0 ? 'Stok Habis' : 'Tambah ke Keranjang';
+      document.getElementById('pdpQtyDecrease').disabled = p.stock <= 0;
+      document.getElementById('pdpQtyIncrease').disabled = p.stock <= 0;
 
       document.getElementById('pdpSelectedColorName').textContent = currentPdpColor;
       document.getElementById('pdpColorSwatches').innerHTML = colors.map(c => `
@@ -559,15 +596,23 @@
               onclick="selectPdpColor(this, '${c.name}')" title="${c.name}"></span>
       `).join('');
 
-      document.getElementById('pdpSelectedSizeName').textContent = 'M';
-      document.querySelectorAll('#pdpSizeButtons .uq-size-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.textContent.trim() === 'M');
-      });
+      document.getElementById('pdpSelectedSizeName').textContent = currentPdpSize;
+      document.getElementById('pdpSizeButtons').innerHTML = sizes.map(size => `
+        <button type="button" class="uq-size-btn ${size === currentPdpSize ? 'active' : ''}"
+                onclick="selectPdpSize(this, '${size}')">${size}</button>
+      `).join('');
+      const sizeMeasurements = p.category === 'Anak'
+        ? [['110cm', '45 cm', '34 cm', '39 cm'], ['120cm', '48 cm', '36 cm', '42 cm'], ['130cm', '51 cm', '38 cm', '45 cm'], ['140cm', '54 cm', '40 cm', '48 cm'], ['150cm', '57 cm', '42 cm', '51 cm']]
+        : [['S', '68 cm', '51 cm', '58 cm'], ['M', '70 cm', '54 cm', '60 cm'], ['L', '72 cm', '57 cm', '61.5 cm'], ['XL', '74 cm', '60 cm', '63 cm']];
+      document.getElementById('pdpSizeGuideBody').innerHTML = sizeMeasurements.map(row => `
+        <tr>${row.map(value => `<td>${value}</td>`).join('')}</tr>
+      `).join('');
 
       renderPdpReviews(p);
       renderRecommended();
 
-      const similar = state.products.filter(item => item.category === p.category && item.id !== p.id).slice(0, 4);
+      const cartProductIds = new Set(state.cart.map(item => item.productId));
+      const similar = state.products.filter(item => item.category === p.category && item.id !== p.id && !cartProductIds.has(item.id)).slice(0, 4);
       document.getElementById('pdpSimilarGrid').innerHTML = similar.map(item => buildProductCardHTML(item, 'SERUPA', 'sim')).join('');
 
       navigateUser('detail');
@@ -590,8 +635,12 @@
 
     function stepPdpQty(delta) {
       const p = state.products.find(item => item.id === currentPdpId);
-      const maxStock = p ? Math.max(1, p.stock) : 10;
       const inp = document.getElementById('pdpQtyField');
+      if (!p || p.stock <= 0) {
+        inp.value = '0';
+        return;
+      }
+      const maxStock = p.stock;
       let val = parseInt(inp.value, 10) || 1;
       val = Math.min(maxStock, Math.max(1, val + delta));
       inp.value = val;
@@ -644,7 +693,7 @@
       const p = state.products.find(item => item.id === prodId);
       if (!p) return;
       const defaultColor = cardSelectedColors[prodId] || ((p.colors && p.colors[0]) ? p.colors[0].name : 'Charcoal');
-      insertIntoCart(prodId, 'M', defaultColor, 1);
+      insertIntoCart(prodId, p.category === 'Anak' ? '110cm' : 'M', defaultColor, 1);
     }
 
     function addPdpToCart() {
@@ -698,6 +747,7 @@
       saveState();
       updateCartBadges();
       renderCartPage();
+      renderRecommended();
     }
 
     function removeCartItem(index) {
@@ -705,6 +755,7 @@
       saveState();
       updateCartBadges();
       renderCartPage();
+      renderRecommended();
       showToast('Item dihapus dari keranjang.');
     }
 
@@ -811,6 +862,7 @@
 
       let subtotal = 0;
       const summaryParts = [];
+      const orderItems = [];
 
       state.cart.forEach(item => {
         const p = state.products.find(prod => prod.id === item.productId);
@@ -818,6 +870,7 @@
           subtotal += p.price * item.qty;
           p.stock = Math.max(0, p.stock - item.qty);
           summaryParts.push(`${p.name} (${item.color}, ${item.size} x${item.qty})`);
+          orderItems.push({ productId: p.id, qty: item.qty, unitPrice: p.price });
         }
       });
 
@@ -838,6 +891,7 @@
         customer: receiverName,
         phone: receiverPhone,
         address: receiverAddr,
+        items: orderItems,
         itemsSummary: summaryParts.join(', '),
         method: payMethod,
         total: grandTotal,
@@ -851,6 +905,7 @@
 
       updateCartBadges();
       renderCatalog();
+      renderRecommended();
       renderCartPage();
 
       // Populate Digital Invoice Modal
@@ -875,17 +930,46 @@
       invModal.show();
     }
 
+    function printDigitalInvoice() {
+      document.body.classList.add('print-invoice-mode');
+      window.addEventListener('afterprint', () => {
+        document.body.classList.remove('print-invoice-mode');
+      }, { once: true });
+      window.print();
+    }
+
     // =========================================================================
     // PROFILE & USER ORDERS
     // =========================================================================
     function updateProfileInfo(e) {
       e.preventDefault();
-      const nameVal = document.getElementById('profInputName').value.trim();
-      document.getElementById('profHeaderName').textContent = nameVal;
-      document.getElementById('chkReceiverName').value = nameVal;
-      document.getElementById('chkReceiverPhone').value = document.getElementById('profInputPhone').value.trim();
-      document.getElementById('chkReceiverAddress').value = document.getElementById('profInputAddress').value.trim();
+      state.userProfile = {
+        name: document.getElementById('profInputName').value.trim(),
+        email: document.getElementById('profInputEmail').value.trim(),
+        phone: document.getElementById('profInputPhone').value.trim(),
+        address: document.getElementById('profInputAddress').value.trim()
+      };
+      renderUserProfile();
+      if (!saveState()) return;
       showToast('Data profil pengguna berhasil diperbarui.');
+    }
+
+    function renderUserProfile() {
+      const profile = state.userProfile;
+      document.getElementById('profHeaderName').textContent = profile.name;
+      document.getElementById('profInputName').value = profile.name;
+      document.getElementById('profInputEmail').value = profile.email;
+      document.getElementById('profInputPhone').value = profile.phone;
+      document.getElementById('profInputAddress').value = profile.address;
+      document.getElementById('chkReceiverName').value = profile.name;
+      document.getElementById('chkReceiverPhone').value = profile.phone;
+      document.getElementById('chkReceiverAddress').value = profile.address;
+      document.querySelector('#page-user-profile .bg-ch-teal').textContent = profile.name
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map(part => part[0].toUpperCase())
+        .join('');
     }
 
     function getStatusBadgeClass(status) {
@@ -925,6 +1009,37 @@
     // =========================================================================
     // ADMIN DASHBOARD, CRUD PRODUCT (UPLOAD), ORDERS & COUPONS
     // =========================================================================
+    function getOrderItems(order) {
+      if (Array.isArray(order.items)) return order.items;
+
+      const summary = order.itemsSummary || '';
+      return state.products.reduce((items, product) => {
+        const productIndex = summary.indexOf(product.name);
+        if (productIndex === -1) return items;
+        const match = summary.slice(productIndex).match(/x(\d+)\)/i);
+        items.push({
+          productId: product.id,
+          qty: match ? Number(match[1]) : 1,
+          unitPrice: product.price
+        });
+        return items;
+      }, []);
+    }
+
+    function getOrderMonth(dateValue) {
+      const parsed = new Date(dateValue);
+      if (!Number.isNaN(parsed.getTime())) return { year: parsed.getFullYear(), month: parsed.getMonth() };
+
+      const parts = String(dateValue).trim().split(/\s+/);
+      const monthNumbers = {
+        Jan: 0, Feb: 1, Mar: 2, Apr: 3, Mei: 4, May: 4, Jun: 5,
+        Jul: 6, Agu: 7, Aug: 7, Sep: 8, Okt: 9, Oct: 9, Nov: 10, Des: 11, Dec: 11
+      };
+      const month = monthNumbers[parts[1]];
+      const year = Number(parts[2]);
+      return month === undefined || !Number.isFinite(year) ? null : { year, month };
+    }
+
     function renderAdminDashboard() {
       const totalRevenue = state.orders.reduce((sum, o) => sum + o.total, 0);
       const avgRating = (
@@ -950,16 +1065,51 @@
         `).join('');
       }
 
+      const categoryRevenue = { Wanita: 0, Pria: 0, Anak: 0 };
+      state.orders.forEach(order => {
+        getOrderItems(order).forEach(item => {
+          const product = state.products.find(candidate => candidate.id === item.productId);
+          if (product && Object.prototype.hasOwnProperty.call(categoryRevenue, product.category)) {
+            categoryRevenue[product.category] += Number(item.unitPrice || product.price) * Number(item.qty || 0);
+          }
+        });
+      });
+      const categorizedRevenue = Object.values(categoryRevenue).reduce((sum, amount) => sum + amount, 0);
+      [
+        ['Wanita', 'admCategoryWomen'],
+        ['Pria', 'admCategoryMen'],
+        ['Anak', 'admCategoryKids']
+      ].forEach(([category, id]) => {
+        const percent = categorizedRevenue ? Math.round(categoryRevenue[category] / categorizedRevenue * 100) : 0;
+        document.getElementById(`${id}Percent`).textContent = `${percent}%`;
+        document.getElementById(`${id}Bar`).style.width = `${percent}%`;
+      });
+
       const canvas = document.getElementById('uqSalesChart');
       if (canvas && window.Chart) {
         if (chartInstance) chartInstance.destroy();
+        const firstMonth = new Date();
+        firstMonth.setDate(1);
+        firstMonth.setMonth(firstMonth.getMonth() - 5);
+        const chartMonths = Array.from({ length: 6 }, (_, index) => {
+          const month = new Date(firstMonth);
+          month.setMonth(firstMonth.getMonth() + index);
+          return month;
+        });
+        const monthlyRevenue = new Map();
+        state.orders.forEach(order => {
+          const orderMonth = getOrderMonth(order.date);
+          if (!orderMonth) return;
+          const key = `${orderMonth.year}-${orderMonth.month}`;
+          monthlyRevenue.set(key, (monthlyRevenue.get(key) || 0) + Number(order.total || 0));
+        });
         chartInstance = new Chart(canvas, {
           type: 'bar',
           data: {
-            labels: ['Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov'],
+            labels: chartMonths.map(month => month.toLocaleDateString('id-ID', { month: 'short' })),
             datasets: [{
               label: 'Omzet Bulanan (Rp)',
-              data: [2450000, 3120000, 2890000, 3750000, 4210000, totalRevenue + 3200000],
+              data: chartMonths.map(month => monthlyRevenue.get(`${month.getFullYear()}-${month.getMonth()}`) || 0),
               backgroundColor: '#76ABAE',
               borderColor: '#303841',
               borderWidth: 1
@@ -1052,11 +1202,37 @@
       if (!file) return;
       const reader = new FileReader();
       reader.onload = function (ev) {
-        uploadedBase64Image = ev.target.result;
-        const previewImg = document.getElementById('admProdPreviewImg');
-        previewImg.src = uploadedBase64Image;
-        previewImg.style.display = 'block';
-        document.getElementById('admProdUploadPrompt').style.display = 'none';
+        const image = new Image();
+        image.onload = function () {
+          const scale = Math.min(1, 600 / image.width);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(image.width * scale);
+          canvas.height = Math.round(image.height * scale);
+          const context = canvas.getContext('2d');
+          if (!context) {
+            showToast('Gambar tidak dapat diproses di browser ini.');
+            return;
+          }
+
+          try {
+            context.drawImage(image, 0, 0, canvas.width, canvas.height);
+            uploadedBase64Image = canvas.toDataURL('image/jpeg', 0.75);
+            const previewImg = document.getElementById('admProdPreviewImg');
+            previewImg.src = uploadedBase64Image;
+            previewImg.style.display = 'block';
+            document.getElementById('admProdUploadPrompt').style.display = 'none';
+          } catch (error) {
+            console.error('Gagal mengompres gambar produk.', error);
+            showToast('Gambar gagal dikompres. Coba pilih file gambar lain.');
+          }
+        };
+        image.onerror = function () {
+          showToast('File yang dipilih bukan gambar yang dapat dibaca.');
+        };
+        image.src = ev.target.result;
+      };
+      reader.onerror = function () {
+        showToast('File gambar gagal dibaca.');
       };
       reader.readAsDataURL(file);
     }
@@ -1082,6 +1258,11 @@
       const originalPrice = origRaw ? parseInt(origRaw, 10) : null;
       const desc = document.getElementById('admProdDesc').value.trim();
       const typedUrl = document.getElementById('admProdUrl').value.trim();
+
+      if (state.products.some(product => product.id === code && product.id !== editId)) {
+        showToast(`Kode produk "${code}" sudah digunakan. Gunakan kode yang berbeda.`);
+        return;
+      }
 
       const finalImg = uploadedBase64Image || typedUrl || 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&w=750&q=85';
 
@@ -1238,6 +1419,7 @@
     }
 
     function renderAllViews() {
+      renderUserProfile();
       renderCatalog();
       renderRecommended();
       updateCartBadges();
@@ -1246,5 +1428,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      if (promoCouponAdded) saveState();
       renderAllViews();
     });

@@ -423,9 +423,10 @@
 
     /* Print Struk Invoice */
     @media print {
-      body * { visibility: hidden; }
-      #printableInvoiceArea, #printableInvoiceArea * { visibility: visible; }
-      #printableInvoiceArea {
+      body.print-invoice-mode * { visibility: hidden; }
+      body.print-invoice-mode #printableInvoiceArea,
+      body.print-invoice-mode #printableInvoiceArea * { visibility: visible; }
+      body.print-invoice-mode #printableInvoiceArea {
         position: absolute;
         left: 0;
         top: 0;

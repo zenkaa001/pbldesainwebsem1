@@ -73,10 +73,10 @@
 
             <!-- Desktop Category Links -->
             <nav class="d-none d-lg-flex align-items-center ms-2">
-              <a class="uq-nav-link active" data-cat-nav="Semua" onclick="navigateUser('home'); selectCategory('Semua')">Semua</a>
-              <a class="uq-nav-link" data-cat-nav="Wanita" onclick="navigateUser('home'); selectCategory('Wanita')">Wanita</a>
-              <a class="uq-nav-link" data-cat-nav="Pria" onclick="navigateUser('home'); selectCategory('Pria')">Pria</a>
-              <a class="uq-nav-link" data-cat-nav="Anak" onclick="navigateUser('home'); selectCategory('Anak')">Anak</a>
+              <a class="uq-nav-link active" data-cat-nav="Semua" onclick="navigateUser('home', false); selectCategory('Semua', true)">Semua</a>
+              <a class="uq-nav-link" data-cat-nav="Wanita" onclick="navigateUser('home', false); selectCategory('Wanita', true)">Wanita</a>
+              <a class="uq-nav-link" data-cat-nav="Pria" onclick="navigateUser('home', false); selectCategory('Pria', true)">Pria</a>
+              <a class="uq-nav-link" data-cat-nav="Anak" onclick="navigateUser('home', false); selectCategory('Anak', true)">Anak</a>
             </nav>
           </div>
 
@@ -162,7 +162,7 @@
                     <span class="badge bg-ch-teal mb-2 px-2 py-1 tracking-wide">KOLEKSI WANITA</span>
                     <h1 class="fw-extrabold display-6 mb-2">Gaya Kasual Modern & Minimalis</h1>
                     <p class="small text-white-50 mb-3">Gunakan kode kupon <strong class="text-white">PROMO10</strong> saat checkout untuk potongan 10%.</p>
-                    <button onclick="selectCategory('Wanita')" class="btn btn-uq-red px-4 py-2 text-uppercase tracking-wide" style="font-size: 0.8rem;">
+                    <button onclick="selectCategory('Wanita', true)" class="btn btn-uq-red px-4 py-2 text-uppercase tracking-wide" style="font-size: 0.8rem;">
                       Belanja Wanita
                     </button>
                   </div>
@@ -179,7 +179,7 @@
                     <span class="badge bg-ch-teal mb-2 px-2 py-1 tracking-wide">KOLEKSI ANAK</span>
                     <h1 class="fw-extrabold display-6 mb-2">Lembut & Bebas Bergerak</h1>
                     <p class="small text-white-50 mb-3">100% Cotton Combed pilihan yang ramah untuk kulit anak aktif.</p>
-                    <button onclick="selectCategory('Anak')" class="btn btn-uq-red px-4 py-2 text-uppercase tracking-wide" style="font-size: 0.8rem;">
+                    <button onclick="selectCategory('Anak', true)" class="btn btn-uq-red px-4 py-2 text-uppercase tracking-wide" style="font-size: 0.8rem;">
                       Belanja Anak
                     </button>
                   </div>
@@ -219,10 +219,10 @@
 
         <!-- Horizontal Scrollable Category Pills (Mobile Friendly) -->
         <div class="category-scroll-strip mb-4" id="categoryTabsContainer">
-          <button type="button" class="cat-tab-btn active" onclick="selectCategory('Semua')">Semua</button>
-          <button type="button" class="cat-tab-btn" onclick="selectCategory('Wanita')">Wanita</button>
-          <button type="button" class="cat-tab-btn" onclick="selectCategory('Pria')">Pria</button>
-          <button type="button" class="cat-tab-btn" onclick="selectCategory('Anak')">Anak</button>
+          <button type="button" class="cat-tab-btn active" onclick="selectCategory('Semua', true)">Semua</button>
+          <button type="button" class="cat-tab-btn" onclick="selectCategory('Wanita', true)">Wanita</button>
+          <button type="button" class="cat-tab-btn" onclick="selectCategory('Pria', true)">Pria</button>
+          <button type="button" class="cat-tab-btn" onclick="selectCategory('Anak', true)">Anak</button>
         </div>
 
         <!-- Grid Produk: 2 Kolom di Mobile (col-6), 4 Kolom di Desktop (col-lg-3) -->
@@ -325,9 +325,9 @@
               <div class="small fw-bold text-uppercase tracking-wide mb-2">Jumlah (Stok: <span id="pdpStockCount">20</span>)</div>
               <div class="d-flex gap-2">
                 <div class="input-group" style="width: 125px;">
-                  <button class="btn btn-uq-outline" type="button" onclick="stepPdpQty(-1)">-</button>
+                  <button class="btn btn-uq-outline" type="button" id="pdpQtyDecrease" onclick="stepPdpQty(-1)">-</button>
                   <input type="text" id="pdpQtyField" class="form-control text-center fw-bold border-ch" value="1" readonly>
-                  <button class="btn btn-uq-outline" type="button" onclick="stepPdpQty(1)">+</button>
+                  <button class="btn btn-uq-outline" type="button" id="pdpQtyIncrease" onclick="stepPdpQty(1)">+</button>
                 </div>
                 <button type="button" id="pdpAddCartBtn" class="btn btn-uq-red flex-grow-1" onclick="addPdpToCart()">
                   Tambah ke Keranjang
@@ -363,7 +363,7 @@
                         <thead class="bg-ch-cream">
                           <tr><th>Ukuran</th><th>Panjang Belakang</th><th>Lebar Dada</th><th>Panjang Lengan</th></tr>
                         </thead>
-                        <tbody>
+                        <tbody id="pdpSizeGuideBody">
                           <tr><td>S</td><td>68 cm</td><td>51 cm</td><td>58 cm</td></tr>
                           <tr><td>M</td><td>70 cm</td><td>54 cm</td><td>60 cm</td></tr>
                           <tr><td>L</td><td>72 cm</td><td>57 cm</td><td>61.5 cm</td></tr>
@@ -442,7 +442,7 @@
           <div class="p-3 border border-ch bg-white">
             <label class="form-label small fw-bold text-uppercase tracking-wide">Gunakan Kupon Diskon</label>
             <div class="input-group input-group-sm" style="max-width: 380px;">
-              <input type="text" id="promoCodeInput" class="form-control text-uppercase border-ch" placeholder="Masukkan kode: FASHION10 / HEMAT50">
+              <input type="text" id="promoCodeInput" class="form-control text-uppercase border-ch" placeholder="Masukkan kode: PROMO10 / FASHION10 / HEMAT50">
               <button class="btn btn-uq-black" type="button" onclick="applyPromoCode()">Terapkan</button>
             </div>
             <small id="promoStatusText" class="d-block mt-2 text-muted">Kupon tersedia: <strong>FASHION10</strong> (10%), <strong>HEMAT50</strong> (Rp 50.000).</small>
@@ -482,7 +482,7 @@
               </div>
               <div class="mb-2">
                 <label class="form-label small fw-semibold">No. WhatsApp</label>
-                <input type="text" id="chkReceiverPhone" class="form-control form-control-sm border-ch" value="0857-2331-2579" required>
+                <input type="tel" id="chkReceiverPhone" class="form-control form-control-sm border-ch" value="085723312579" inputmode="numeric" pattern="[0-9]{10,15}" maxlength="15" title="Masukkan 10 sampai 15 digit angka." required>
               </div>
               <div class="mb-2">
                 <label class="form-label small fw-semibold">Alamat Lengkap Pengiriman</label>
@@ -538,7 +538,7 @@
               </div>
               <div class="mb-2">
                 <label class="form-label small fw-semibold">Nomor WhatsApp</label>
-                <input type="text" id="profInputPhone" class="form-control form-control-sm border-ch" value="0857-2331-2579" required>
+                <input type="tel" id="profInputPhone" class="form-control form-control-sm border-ch" value="085723312579" inputmode="numeric" pattern="[0-9]{10,15}" maxlength="15" title="Masukkan 10 sampai 15 digit angka." required>
               </div>
               <div class="mb-3">
                 <label class="form-label small fw-semibold">Alamat Utama</label>
@@ -603,10 +603,10 @@
       </div>
       <div class="offcanvas-body p-0">
         <div class="list-group list-group-flush">
-          <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small" data-bs-dismiss="offcanvas" onclick="navigateUser('home'); selectCategory('Semua')">Semua Produk</button>
-          <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small" data-bs-dismiss="offcanvas" onclick="navigateUser('home'); selectCategory('Wanita')">Wanita (Women)</button>
-          <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small" data-bs-dismiss="offcanvas" onclick="navigateUser('home'); selectCategory('Pria')">Pria (Men)</button>
-          <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small" data-bs-dismiss="offcanvas" onclick="navigateUser('home'); selectCategory('Anak')">Anak (Kids)</button>
+          <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small" data-bs-dismiss="offcanvas" onclick="navigateUser('home', false); selectCategory('Semua', true)">Semua Produk</button>
+          <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small" data-bs-dismiss="offcanvas" onclick="navigateUser('home', false); selectCategory('Wanita', true)">Wanita (Women)</button>
+          <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small" data-bs-dismiss="offcanvas" onclick="navigateUser('home', false); selectCategory('Pria', true)">Pria (Men)</button>
+          <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small" data-bs-dismiss="offcanvas" onclick="navigateUser('home', false); selectCategory('Anak', true)">Anak (Kids)</button>
           <button class="list-group-item list-group-item-action py-3 fw-bold text-uppercase small text-ch-orange" data-bs-dismiss="offcanvas" onclick="switchRole('admin')">
             <i class="bi bi-speedometer2 me-2"></i>Masuk Panel Admin
           </button>
@@ -721,16 +721,16 @@
                   <div class="border border-ch p-3 p-md-4 h-100 bg-white">
                     <h6 class="fw-bold text-uppercase tracking-wide mb-3">Kontribusi Kategori</h6>
                     <div class="mb-3">
-                      <div class="d-flex justify-content-between small fw-semibold mb-1"><span>Wanita (Women)</span><span>48%</span></div>
-                      <div class="progress bg-ch-cream" style="height: 7px;"><div class="progress-bar bg-ch-teal" style="width: 48%"></div></div>
+                      <div class="d-flex justify-content-between small fw-semibold mb-1"><span>Wanita (Women)</span><span id="admCategoryWomenPercent">0%</span></div>
+                      <div class="progress bg-ch-cream" style="height: 7px;"><div id="admCategoryWomenBar" class="progress-bar bg-ch-teal" style="width: 0%"></div></div>
                     </div>
                     <div class="mb-3">
-                      <div class="d-flex justify-content-between small fw-semibold mb-1"><span>Pria (Men)</span><span>34%</span></div>
-                      <div class="progress bg-ch-cream" style="height: 7px;"><div class="progress-bar bg-ch-orange" style="width: 34%"></div></div>
+                      <div class="d-flex justify-content-between small fw-semibold mb-1"><span>Pria (Men)</span><span id="admCategoryMenPercent">0%</span></div>
+                      <div class="progress bg-ch-cream" style="height: 7px;"><div id="admCategoryMenBar" class="progress-bar bg-ch-orange" style="width: 0%"></div></div>
                     </div>
                     <div class="mb-3">
-                      <div class="d-flex justify-content-between small fw-semibold mb-1"><span>Anak (Kids)</span><span>18%</span></div>
-                      <div class="progress bg-ch-cream" style="height: 7px;"><div class="progress-bar bg-ch-charcoal" style="width: 18%"></div></div>
+                      <div class="d-flex justify-content-between small fw-semibold mb-1"><span>Anak (Kids)</span><span id="admCategoryKidsPercent">0%</span></div>
+                      <div class="progress bg-ch-cream" style="height: 7px;"><div id="admCategoryKidsBar" class="progress-bar bg-ch-charcoal" style="width: 0%"></div></div>
                     </div>
                     <hr class="border-ch">
                     <p class="small text-muted mb-0">Data laporan diperbarui otomatis setiap kali pelanggan menyelesaikan pembayaran.</p>
@@ -905,7 +905,7 @@
               <i class="bi bi-whatsapp me-1"></i> Konfirmasi via WhatsApp
             </a>
             <div class="d-flex gap-2">
-              <button type="button" class="btn btn-uq-outline w-50" onclick="window.print()">Cetak Struk</button>
+              <button type="button" class="btn btn-uq-outline w-50" onclick="printDigitalInvoice()">Cetak Struk</button>
               <button type="button" class="btn btn-uq-black w-50" data-bs-dismiss="modal" onclick="navigateUser('profile')">Riwayat Order</button>
             </div>
           </div>
