@@ -179,7 +179,7 @@
       coupons: [
         { code: 'FASHION10', type: 'percent', value: 10, active: true },
         { code: 'HEMAT50', type: 'fixed', value: 50000, active: true },
-        { code: 'PBLPENS', type: 'percent', value: 20, active: true }
+        
       ],
       orders: [
         {
