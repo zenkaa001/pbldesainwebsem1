@@ -387,18 +387,37 @@
       }
     }
 
-    function handleSearchInput(val) {
-      searchKeyword = val.trim().toLowerCase();
-      const desktopInp = document.getElementById('desktopSearchInput');
-      const mobileInp = document.getElementById('mobileSearchInput');
-      if (desktopInp && desktopInp.value !== val) desktopInp.value = val;
-      if (mobileInp && mobileInp.value !== val) mobileInp.value = val;
+function handleSearchInput(val) {
+  const previousKeyword = searchKeyword;
+  const isHomeActive = document
+    .getElementById('page-user-home')
+    ?.classList.contains('active');
 
-      if (searchKeyword.length > 0) {
-        navigateUser('home');
-      }
-      renderCatalog();
-    }
+  searchKeyword = val.trim().toLowerCase();
+
+  const desktopInp = document.getElementById('desktopSearchInput');
+  const mobileInp = document.getElementById('mobileSearchInput');
+  if (desktopInp && desktopInp.value !== val) desktopInp.value = val;
+  if (mobileInp && mobileInp.value !== val) mobileInp.value = val;
+
+  if (searchKeyword && !isHomeActive) {
+    navigateUser('home', false);
+  }
+
+  renderCatalog();
+
+  const shouldScrollToResults =
+    searchKeyword && (!previousKeyword || !isHomeActive);
+
+  if (shouldScrollToResults) {
+    requestAnimationFrame(() => {
+      document.getElementById('catalogAnchor')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    });
+  }
+}
 
     function handleSortChange(val) {
       sortMode = val;
