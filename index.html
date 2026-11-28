@@ -84,7 +84,7 @@
           <div class="d-flex align-items-center gap-2">
             <div class="d-none d-md-block" style="width: 240px;">
               <div class="input-group input-group-sm">
-                <input type="text" id="desktopSearchInput" class="form-control border-ch" placeholder="Cari pakaian..." oninput="handleSearchInput(this.value)">
+                <input type="text" id="desktopSearchInput" class="form-control border-ch" placeholder="Cari pakaian..." oninput="handleSearchInput(this.value)" onkeydown="handleSearchKeydown(event)">
                 <span class="input-group-text bg-white border-ch"><i class="bi bi-search"></i></span>
               </div>
             </div>
@@ -110,8 +110,8 @@
         <!-- Mobile Collapsible Search Bar -->
         <div class="collapse mt-2 d-md-none" id="mobileSearchCollapse">
           <div class="input-group input-group-sm">
-            <input type="text" id="mobileSearchInput" class="form-control" placeholder="Cari nama pakaian atau kode..." oninput="handleSearchInput(this.value)">
-            <button class="btn btn-uq-black" type="button" onclick="handleSearchInput('')"><i class="bi bi-x-lg"></i></button>
+            <input type="text" id="mobileSearchInput" class="form-control" placeholder="Cari nama pakaian atau kode..." oninput="handleSearchInput(this.value)" onkeydown="handleSearchKeydown(event)">
+            <button class="btn btn-uq-black" type="button" onclick="clearSearch()"><i class="bi bi-x-lg"></i></button>
           </div>
         </div>
       </div>

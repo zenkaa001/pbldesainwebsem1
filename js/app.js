@@ -232,6 +232,7 @@
     let selectedCategory = 'Semua';
     let lastInterestCategory = state.lastInterestCategory;
     let searchKeyword = '';
+    let searchInputValue = '';
     let sortMode = 'featured';
     let activePromo = null;
     let currentPdpId = 'PRD01';
@@ -387,37 +388,57 @@
       }
     }
 
-function handleSearchInput(val) {
-  const previousKeyword = searchKeyword;
-  const isHomeActive = document
-    .getElementById('page-user-home')
-    ?.classList.contains('active');
+    function handleSearchInput(val) {
+      searchInputValue = val;
 
-  searchKeyword = val.trim().toLowerCase();
+      const desktopInp = document.getElementById('desktopSearchInput');
+      const mobileInp = document.getElementById('mobileSearchInput');
+      if (desktopInp && desktopInp.value !== val) desktopInp.value = val;
+      if (mobileInp && mobileInp.value !== val) mobileInp.value = val;
+    }
 
-  const desktopInp = document.getElementById('desktopSearchInput');
-  const mobileInp = document.getElementById('mobileSearchInput');
-  if (desktopInp && desktopInp.value !== val) desktopInp.value = val;
-  if (mobileInp && mobileInp.value !== val) mobileInp.value = val;
+    function handleSearchKeydown(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        handleSearchSubmit();
+      }
+    }
 
-  if (searchKeyword && !isHomeActive) {
-    navigateUser('home', false);
-  }
+    function handleSearchSubmit() {
+      searchKeyword = searchInputValue.trim().toLowerCase();
 
-  renderCatalog();
+      const isHomeActive = document
+        .getElementById('page-user-home')
+        ?.classList.contains('active');
+      if (searchKeyword && !isHomeActive) {
+        navigateUser('home', false);
+      }
 
-  const shouldScrollToResults =
-    searchKeyword && (!previousKeyword || !isHomeActive);
+      const results = renderCatalog();
+      if (!searchKeyword) return;
 
-  if (shouldScrollToResults) {
-    requestAnimationFrame(() => {
-      document.getElementById('catalogAnchor')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
+      requestAnimationFrame(() => {
+        const target = results.length
+          ? document.getElementById(`catalog-product-${results[0].id}`)
+          : null;
+        if (target) {
+          target.classList.add('search-result-highlight');
+          target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          document.getElementById('catalogAnchor')?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
       });
-    });
-  }
-}
+    }
+
+    function clearSearch() {
+      searchInputValue = '';
+      searchKeyword = '';
+      handleSearchInput('');
+      renderCatalog();
+    }
 
     function handleSortChange(val) {
       sortMode = val;
@@ -437,7 +458,7 @@ function handleSearchInput(val) {
 
       return `
         <div class="col-6 col-md-4 col-lg-3">
-          <article class="uq-product-card h-100 d-flex flex-column">
+          <article ${contextPrefix === 'cat' ? `id="catalog-product-${p.id}"` : ''} class="uq-product-card h-100 d-flex flex-column">
             <div class="uq-img-ratio mb-2" style="cursor: pointer;" onclick="openProductDetail('${p.id}')">
               <img src="${p.img}" alt="${p.name}" loading="lazy" onerror="this.src='${fallbackSvg(p.id)}'">
               ${recTag ? `<span class="position-absolute top-0 start-0 bg-ch-teal px-2 py-1 fw-bold text-uppercase" style="font-size: 0.62rem; letter-spacing: 0.05em;">${recTag}</span>` : ''}
@@ -496,7 +517,7 @@ function handleSearchInput(val) {
     function renderCatalog() {
       const grid = document.getElementById('mainCatalogGrid');
       const countLabel = document.getElementById('productCountLabel');
-      if (!grid) return;
+      if (!grid) return [];
 
       let list = [...state.products];
 
@@ -529,10 +550,11 @@ function handleSearchInput(val) {
 
       if (list.length === 0) {
         grid.innerHTML = `<div class="col-12 text-center py-5 text-muted small bg-white border border-ch">Tidak ditemukan produk yang sesuai dengan pencarianmu.</div>`;
-        return;
+        return list;
       }
 
       grid.innerHTML = list.map(p => buildProductCardHTML(p, null, 'cat')).join('');
+      return list;
     }
 
     function renderRecommended() {
